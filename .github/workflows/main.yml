@@ -1,4 +1,3 @@
-```yaml
 name: Build VIKINGYFY ImmortalWrt - JDCloud AX1800 Pro
 
 on:
@@ -79,25 +78,17 @@ jobs:
           make defconfig
 
           echo "===== TARGET CONFIG ====="
-          grep -E \
-            'CONFIG_TARGET_qualcommax|CONFIG_TARGET_qualcommax_ipq60xx|CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_' \
-            .config || true
+          grep -E 'CONFIG_TARGET_qualcommax|CONFIG_TARGET_qualcommax_ipq60xx|CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_' .config || true
 
       - name: Check selected device
         working-directory: immortalwrt
         run: |
           echo "===== SELECTED DEVICE ====="
-
-          grep \
-            'CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_.*=y' \
-            .config || true
+          grep 'CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_.*=y' .config || true
 
           echo ""
           echo "===== JDCloud AX1800 Pro ====="
-
-          grep \
-            'CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01' \
-            .config || true
+          grep 'CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01' .config || true
 
       - name: Download sources
         working-directory: immortalwrt
@@ -113,7 +104,6 @@ jobs:
         working-directory: immortalwrt
         run: |
           echo "===== BUILD OUTPUT ====="
-
           find bin/targets/qualcommax/ipq60xx \
             -maxdepth 1 \
             -type f \
@@ -126,4 +116,3 @@ jobs:
           path: |
             immortalwrt/bin/targets/qualcommax/ipq60xx/*
           if-no-files-found: error
-```
