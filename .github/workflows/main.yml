@@ -1,3 +1,4 @@
+```yaml
 name: Build VIKINGYFY ImmortalWrt - JDCloud AX1800 Pro
 
 on:
@@ -9,9 +10,6 @@ permissions:
 env:
   REPO_URL: https://github.com/VIKINGYFY/immortalwrt.git
   REPO_BRANCH: main
-  TARGET: qualcommax
-  SUBTARGET: ipq60xx
-  DEVICE: jdcloud_re-ss-01
 
 jobs:
   build:
@@ -55,7 +53,7 @@ jobs:
         run: |
           git clone --depth=1 --branch=${REPO_BRANCH} ${REPO_URL} immortalwrt
           cd immortalwrt
-          echo "Source commit:"
+          echo "===== SOURCE COMMIT ====="
           git log -1 --oneline
 
       - name: Update feeds
@@ -70,7 +68,7 @@ jobs:
           cat > .config <<'EOF'
           CONFIG_TARGET_qualcommax=y
           CONFIG_TARGET_qualcommax_ipq60xx=y
-          CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01=y
+          CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01=y
 
           CONFIG_PACKAGE_luci=y
           CONFIG_PACKAGE_luci-ssl=y
@@ -81,7 +79,25 @@ jobs:
           make defconfig
 
           echo "===== TARGET CONFIG ====="
-          grep -E 'CONFIG_TARGET_qualcommax|CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01' .config
+          grep -E \
+            'CONFIG_TARGET_qualcommax|CONFIG_TARGET_qualcommax_ipq60xx|CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_' \
+            .config || true
+
+      - name: Check selected device
+        working-directory: immortalwrt
+        run: |
+          echo "===== SELECTED DEVICE ====="
+
+          grep \
+            'CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_.*=y' \
+            .config || true
+
+          echo ""
+          echo "===== JDCloud AX1800 Pro ====="
+
+          grep \
+            'CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01' \
+            .config || true
 
       - name: Download sources
         working-directory: immortalwrt
@@ -97,7 +113,11 @@ jobs:
         working-directory: immortalwrt
         run: |
           echo "===== BUILD OUTPUT ====="
-          find bin/targets/qualcommax/ipq60xx -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+
+          find bin/targets/qualcommax/ipq60xx \
+            -maxdepth 1 \
+            -type f \
+            -printf '%f %s bytes\n' | sort
 
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
@@ -106,3 +126,4 @@ jobs:
           path: |
             immortalwrt/bin/targets/qualcommax/ipq60xx/*
           if-no-files-found: error
+```
