@@ -1,4 +1,4 @@
-name: Build VIKINGYFY ImmortalWrt - JDCloud AX1800 Pro
+name: Build VIKINGYFY ImmortalWrt Ultimate - JDCloud AX1800 Pro
 
 on:
   workflow_dispatch:
@@ -8,13 +8,15 @@ permissions:
 
 env:
   REPO_URL: https://github.com/VIKINGYFY/immortalwrt.git
-  REPO_BRANCH: main
+  REPO_BRANCH: master
 
 jobs:
   build:
+
     runs-on: ubuntu-22.04
 
     steps:
+
       - name: Free disk space
         run: |
           sudo rm -rf /usr/local/lib/android
@@ -23,7 +25,8 @@ jobs:
           sudo apt-get clean
           df -h
 
-      - name: Install build dependencies
+
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -48,71 +51,133 @@ jobs:
             dos2unix \
             libfuse-dev
 
+
       - name: Clone VIKINGYFY ImmortalWrt
         run: |
-          git clone --depth=1 --branch=${REPO_BRANCH} ${REPO_URL} immortalwrt
-          cd immortalwrt
-          echo "===== SOURCE COMMIT ====="
-          git log -1 --oneline
+          git clone --depth=1 \
+          --branch=${REPO_BRANCH} \
+          ${REPO_URL} \
+          immortalwrt
 
-      - name: Update feeds
+
+      - name: Add extra feeds
         working-directory: immortalwrt
         run: |
+
+          echo "src-git kenzo https://github.com/kenzok8/openwrt-packages.git" >> feeds.conf.default
+          echo "src-git small https://github.com/kenzok8/small.git" >> feeds.conf.default
+
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+
 
       - name: Configure JDCloud AX1800 Pro
         working-directory: immortalwrt
         run: |
-          cat > .config <<'EOF'
-          CONFIG_TARGET_qualcommax=y
-          CONFIG_TARGET_qualcommax_ipq60xx=y
-          CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01=y
 
-          CONFIG_PACKAGE_luci=y
-          CONFIG_PACKAGE_luci-ssl=y
-          CONFIG_PACKAGE_curl=y
-          CONFIG_PACKAGE_wget-ssl=y
-          EOF
+          cat > .config <<'EOF'
+
+CONFIG_TARGET_qualcommax=y
+CONFIG_TARGET_qualcommax_ipq60xx=y
+CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01=y
+
+
+# LuCI
+CONFIG_PACKAGE_luci=y
+CONFIG_PACKAGE_luci-ssl=y
+
+
+# Chinese
+CONFIG_PACKAGE_luci-i18n-base-zh-cn=y
+CONFIG_PACKAGE_luci-i18n-firewall-zh-cn=y
+CONFIG_PACKAGE_luci-i18n-system-zh-cn=y
+CONFIG_PACKAGE_luci-i18n-network-zh-cn=y
+
+
+# PassWall
+CONFIG_PACKAGE_luci-app-passwall=y
+CONFIG_PACKAGE_xray-core=y
+CONFIG_PACKAGE_sing-box=y
+
+
+# SmartDNS
+CONFIG_PACKAGE_smartdns=y
+CONFIG_PACKAGE_luci-app-smartdns=y
+
+
+# AdGuard Home
+CONFIG_PACKAGE_adguardhome=y
+CONFIG_PACKAGE_luci-app-adguardhome=y
+
+
+# Docker
+CONFIG_PACKAGE_dockerd=y
+CONFIG_PACKAGE_containerd=y
+CONFIG_PACKAGE_docker-compose=y
+CONFIG_PACKAGE_luci-app-dockerman=y
+
+
+# KMS
+CONFIG_PACKAGE_vlmcsd=y
+CONFIG_PACKAGE_luci-app-vlmcsd=y
+
+
+# Tools
+CONFIG_PACKAGE_htop=y
+CONFIG_PACKAGE_curl=y
+CONFIG_PACKAGE_wget=y
+CONFIG_PACKAGE_nano=y
+CONFIG_PACKAGE_luci-app-ttyd=y
+CONFIG_PACKAGE_luci-app-statistics=y
+
+
+EOF
 
           make defconfig
 
-          echo "===== TARGET CONFIG ====="
-          grep -E 'CONFIG_TARGET_qualcommax|CONFIG_TARGET_qualcommax_ipq60xx|CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_' .config || true
 
-      - name: Check selected device
+      - name: Check configuration
         working-directory: immortalwrt
         run: |
-          echo "===== SELECTED DEVICE ====="
-          grep 'CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_.*=y' .config || true
 
-          echo ""
-          echo "===== JDCloud AX1800 Pro ====="
-          grep 'CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01' .config || true
+          echo "===== DEVICE ====="
+          grep jdcloud .config
+
+          echo "===== NSS ====="
+          grep -i nss .config | head -50
+
+          echo "===== DOCKER ====="
+          grep docker .config
+
+          echo "===== PASSWALL ====="
+          grep passwall .config
+
 
       - name: Download sources
         working-directory: immortalwrt
         run: |
-          make download -j2 V=s
+          make download -j8
+
 
       - name: Build firmware
         working-directory: immortalwrt
         run: |
           make -j2 V=s
 
-      - name: Show firmware files
+
+      - name: Show firmware
         working-directory: immortalwrt
         run: |
-          echo "===== BUILD OUTPUT ====="
-          find bin/targets/qualcommax/ipq60xx \
-            -maxdepth 1 \
-            -type f \
-            -printf '%f %s bytes\n' | sort
+          find bin/targets/qualcommax/ipq60xx -maxdepth 1 -type f -printf "%f %s bytes\n"
 
-      - name: Upload firmware artifacts
+
+      - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
-          name: JDCloud-AX1800-Pro-VIKINGYFY
+
+          name: AX1800Pro-VIKINGYFY-Ultimate
+
           path: |
             immortalwrt/bin/targets/qualcommax/ipq60xx/*
+
           if-no-files-found: error
