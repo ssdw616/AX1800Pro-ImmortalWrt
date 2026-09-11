@@ -1,4 +1,4 @@
-name: Build VIKINGYFY ImmortalWrt Ultimate - JDCloud AX1800 Pro
+name: Build VIKINGYFY ImmortalWrt Ultimate JDCloud AX1800 Pro
 
 on:
   workflow_dispatch:
@@ -63,7 +63,6 @@ jobs:
       - name: Add extra feeds
         working-directory: immortalwrt
         run: |
-
           echo "src-git kenzo https://github.com/kenzok8/openwrt-packages.git" >> feeds.conf.default
           echo "src-git small https://github.com/kenzok8/small.git" >> feeds.conf.default
 
@@ -74,15 +73,11 @@ jobs:
       - name: Configure JDCloud AX1800 Pro
         working-directory: immortalwrt
         run: |
-
           cat > .config <<'EOF'
-
 CONFIG_TARGET_qualcommax=y
 CONFIG_TARGET_qualcommax_ipq60xx=y
 CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_jdcloud_re-ss-01=y
 
-
-# LuCI
 CONFIG_PACKAGE_luci=y
 CONFIG_PACKAGE_luci-ssl=y
 
@@ -130,7 +125,6 @@ CONFIG_PACKAGE_nano=y
 CONFIG_PACKAGE_luci-app-ttyd=y
 CONFIG_PACKAGE_luci-app-statistics=y
 
-
 EOF
 
           make defconfig
@@ -139,18 +133,17 @@ EOF
       - name: Check configuration
         working-directory: immortalwrt
         run: |
-
           echo "===== DEVICE ====="
-          grep jdcloud .config
+          grep jdcloud .config || true
 
           echo "===== NSS ====="
-          grep -i nss .config | head -50
+          grep -i nss .config | head -50 || true
 
           echo "===== DOCKER ====="
-          grep docker .config
+          grep docker .config || true
 
           echo "===== PASSWALL ====="
-          grep passwall .config
+          grep passwall .config || true
 
 
       - name: Download sources
@@ -165,19 +158,18 @@ EOF
           make -j2 V=s
 
 
-      - name: Show firmware
+      - name: Show firmware files
         working-directory: immortalwrt
         run: |
+          echo "===== BUILD OUTPUT ====="
           find bin/targets/qualcommax/ipq60xx -maxdepth 1 -type f -printf "%f %s bytes\n"
 
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
-
           name: AX1800Pro-VIKINGYFY-Ultimate
-
           path: |
             immortalwrt/bin/targets/qualcommax/ipq60xx/*
-
           if-no-files-found: error
+          retention-days: 7
